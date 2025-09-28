@@ -32,11 +32,22 @@ class MangoImage(models.Model):
     verified_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='verified_images')
     verified_date = models.DateTimeField(null=True, blank=True)
     notes = models.TextField(blank=True)
+    user_feedback = models.TextField(blank=True)  # User feedback about the detection
+    user_confirmed_correct = models.BooleanField(null=True, blank=True)  # Whether user confirmed prediction as correct during analysis
     
     # Metadata
     image_size = models.CharField(max_length=20, blank=True)
     processing_time = models.FloatField(null=True, blank=True)
     client_ip = models.GenericIPAddressField(null=True, blank=True)
+    
+    # Location data from EXIF (if user consents)
+    latitude = models.FloatField(null=True, blank=True)
+    longitude = models.FloatField(null=True, blank=True)
+    location_accuracy = models.FloatField(null=True, blank=True)
+    location_consent_given = models.BooleanField(default=False)
+    location_accuracy_confirmed = models.BooleanField(null=True, blank=True)  # Whether user confirmed location as accurate
+    location_address = models.TextField(blank=True)  # Human-readable address
+    location_source = models.CharField(max_length=20, blank=True)  # 'exif', 'gps', 'manual'
     
     class Meta:
         ordering = ['-uploaded_at']

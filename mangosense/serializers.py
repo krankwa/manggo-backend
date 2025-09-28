@@ -74,11 +74,12 @@ class MangoImageSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'user', 'image', 'image_url', 'original_filename', 'predicted_class',
             'confidence_score', 'uploaded_at', 'is_verified', 'notes', 'disease_classification',
-            'verified_by', 'verified_date', 'disease_type'
+            'verified_by', 'verified_date', 'disease_type', 'user_feedback', 'user_confirmed_correct',
+            'latitude', 'longitude', 'location_address', 'location_source', 'location_consent_given', 'location_accuracy_confirmed'
         ]
         read_only_fields = [
             'id', 'uploaded_at', 'predicted_class', 'confidence_score',
-            'disease_classification', 'image_size', 'processing_time', 'client_ip'
+            'disease_classification', 'image_size', 'processing_time', 'client_ip', 'user_confirmed_correct'
         ]
 
     def get_image_url(self, obj):

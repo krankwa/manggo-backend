@@ -538,17 +538,48 @@ def users_list(request):
         }, status=500)
 
 @csrf_exempt
-@require_http_methods(["GET"])
+@require_http_methods(["GET", "PUT"])
 def user_detail(request, user_id):
-    """Get detailed information about a specific user"""
+    """Get detailed information about a specific user or update user status"""
     try:
         user = User.objects.select_related('userprofile').prefetch_related('mangoimage_set').get(id=user_id)
-        serializer = UserDetailSerializer(user, context={'request': request})
         
-        return JsonResponse({
-            'success': True,
-            'data': serializer.data
-        })
+        if request.method == 'GET':
+            serializer = UserDetailSerializer(user, context={'request': request})
+            return JsonResponse({
+                'success': True,
+                'data': serializer.data
+            })
+            
+        elif request.method == 'PUT':
+            # Handle user status updates
+            import json
+            try:
+                data = json.loads(request.body)
+                if 'is_active' in data:
+                    user.is_active = data['is_active']
+                    user.save()
+                    
+                    return JsonResponse({
+                        'success': True,
+                        'message': f'User status updated successfully',
+                        'data': {
+                            'id': user.id,
+                            'is_active': user.is_active,
+                            'username': user.username
+                        }
+                    })
+                else:
+                    return JsonResponse({
+                        'success': False,
+                        'error': 'Missing required field: is_active'
+                    }, status=400)
+                    
+            except json.JSONDecodeError:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Invalid JSON data'
+                }, status=400)
         
     except User.DoesNotExist:
         return JsonResponse({

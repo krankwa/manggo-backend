@@ -96,7 +96,26 @@ def predict_image(request):
         image_file = request.FILES['image']
         client_ip = get_client_ip(request)
         
+        # Extract location data from request
+        latitude = request.data.get('latitude')
+        longitude = request.data.get('longitude')
+        location_accuracy_confirmed = request.data.get('location_accuracy_confirmed', 'false').lower() == 'true'
+        location_source = request.data.get('location_source', '')
+        location_address = request.data.get('location_address', '')
+        
+        # Check if this is a preview-only request (no database save)
+        preview_only = request.data.get('preview_only', 'false').lower() == 'true'
+        
+        # Extract user verification data
+        is_detection_correct = request.data.get('is_detection_correct', '').lower() == 'true'
+        user_feedback = request.data.get('user_feedback', '')
+        
         print(f"DEBUG: Processing image: {image_file.name}, size: {image_file.size}")
+        print(f"DEBUG: Preview only: {preview_only}")
+        print(f"DEBUG: User verification - correct: {is_detection_correct}, feedback: {user_feedback}")
+        print(f"DEBUG: Location data - accuracy confirmed: {location_accuracy_confirmed}, source: {location_source}")
+        if latitude and longitude:
+            print(f"DEBUG: Location coordinates: {latitude}, {longitude}")
 
         # Validate image file using utils
         validation_errors = validate_image_file(image_file)
@@ -126,9 +145,18 @@ def predict_image(request):
                 status=500
             )
 
-        # Get prediction type
+        # Get prediction type and location data
         detection_type = request.data.get('detection_type', 'leaf')
         print(f"DEBUG: Detection type: {detection_type}")
+        
+        # Extract location data from request
+        latitude = request.data.get('latitude')
+        longitude = request.data.get('longitude')
+        location_accuracy_confirmed = request.data.get('location_accuracy_confirmed', 'false').lower() == 'true'
+        location_source = request.data.get('location_source', '')
+        location_address = request.data.get('location_address', '')
+        
+        print(f"📍 DEBUG: Location data - lat: {latitude}, lng: {longitude}, accuracy confirmed: {location_accuracy_confirmed}, source: {location_source}")
 
         # Choose model path and class names (IMPROVED LOGIC)
         if detection_type == 'fruit':
@@ -231,28 +259,64 @@ def predict_image(request):
             pred['treatment'] = treatment_suggestions.get(pred['disease'], "No treatment information available.")
             pred['detection_type'] = model_used
 
-        # Save to database
-        try:
-            image_file.seek(0)
-            unique_filename = generate_unique_filename(image_file.name)
-            mango_image = MangoImage.objects.create(
-                image=image_file,
-                original_filename=image_file.name,
-                predicted_class=prediction_summary['primary_prediction']['disease'],
-                disease_classification=prediction_summary['primary_prediction']['disease'],
-                disease_type=model_used,  # Use the actual model that was used for detection
-                confidence_score=prediction_summary['primary_prediction']['confidence'] / 100,
-                user=request.user if request.user.is_authenticated else None,
-                image_size=f"{original_size[0]}x{original_size[1]}",
-                client_ip=get_client_ip(request),
-                notes=f"Predicted via mobile app with {prediction_summary['primary_prediction']['confidence']:.2f}% confidence"
-            )
-            log_prediction_activity(request.user, mango_image.id, prediction_summary)
-            saved_image_id = mango_image.id
-            print(f"DEBUG: Image saved to database with ID: {saved_image_id}")
-        except Exception as e:
-            print(f"Error saving image to database: {e}")
-            saved_image_id = None
+        # Save to database only if not preview mode
+        saved_image_id = None
+        if not preview_only:
+            try:
+                image_file.seek(0)
+                unique_filename = generate_unique_filename(image_file.name)
+                
+                # Prepare location data for storage - always save if available
+                location_data = {}
+                if latitude and longitude:
+                    try:
+                        location_data.update({
+                            'latitude': float(latitude),
+                            'longitude': float(longitude),
+                            'location_consent_given': True,  # Consent was given during registration
+                            'location_accuracy_confirmed': location_accuracy_confirmed,
+                            'location_source': location_source,
+                            'location_address': location_address,
+                        })
+                        print(f"📍 DEBUG: Storing location data - accuracy confirmed: {location_accuracy_confirmed}")
+                        print(f"📍 DEBUG: Location data: {location_data}")
+                    except (ValueError, TypeError) as e:
+                        print(f"📍 WARNING: Invalid location coordinates, not storing: {e}")
+                        location_data.update({
+                            'location_consent_given': False,
+                            'location_accuracy_confirmed': False,
+                        })
+                else:
+                    location_data.update({
+                        'location_consent_given': False,
+                        'location_accuracy_confirmed': False,
+                    })
+                    print(f"📍 DEBUG: No location data available")
+                
+                mango_image = MangoImage.objects.create(
+                    image=image_file,
+                    original_filename=image_file.name,
+                    predicted_class=prediction_summary['primary_prediction']['disease'],
+                    disease_classification=prediction_summary['primary_prediction']['disease'],
+                    disease_type=model_used,  # Use the actual model that was used for detection
+                    confidence_score=prediction_summary['primary_prediction']['confidence'] / 100,
+                    user=request.user if request.user.is_authenticated else None,
+                    image_size=f"{original_size[0]}x{original_size[1]}",
+                    client_ip=get_client_ip(request),
+                    notes=f"Predicted via mobile app with {prediction_summary['primary_prediction']['confidence']:.2f}% confidence",
+                    is_verified=False,  # Always default to unverified - admin must manually verify
+                    user_feedback=user_feedback if user_feedback else None,  # Add user feedback
+                    user_confirmed_correct=is_detection_correct if user_feedback else None,  # Save user confirmation decision
+                    **location_data  # Add all location data
+                )
+                log_prediction_activity(request.user, mango_image.id, prediction_summary)
+                saved_image_id = mango_image.id
+                print(f"✅ DEBUG: Image saved to database with ID: {saved_image_id}")
+            except Exception as e:
+                print(f"❌ Error saving image to database: {e}")
+                saved_image_id = None
+        else:
+            print(f"🔍 DEBUG: Preview mode - skipping database save")
 
         # Memory cleanup
         gc.collect()
@@ -272,7 +336,6 @@ def predict_image(request):
                 'confidence_level': prediction_summary['confidence_level'],
                 'total_diseases_checked': len(model_class_names)
             },
-            'saved_image_id': saved_image_id,
             'model_used': model_used,
             'model_path': model_path,
             'debug_info': {
@@ -281,6 +344,10 @@ def predict_image(request):
                 'processed_size': IMG_SIZE
             }
         }
+        
+        # Include saved_image_id only if not preview mode and image was saved
+        if not preview_only and saved_image_id:
+            response_data['saved_image_id'] = saved_image_id
         try:
             probs_list = prediction.tolist() if hasattr(prediction, 'tolist') else list(map(float, prediction))
             labels_list = model_class_names
