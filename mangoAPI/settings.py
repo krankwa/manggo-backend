@@ -23,12 +23,13 @@ FRUIT_MODEL_PATH = os.path.join(BASE_DIR, 'models', 'fruit-efficientnetb0-model.
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-m33e+gk)*=q+fllk0z&r@%m=t$k5_4dw4x4xtnm4)5q%uesfs)'
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-m33e+gk)*=q+fllk0z&r@%m=t$k5_4dw4x4xtnm4)5q%uesfs)')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True  # Set to True for development to serve media files
+DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 
-ALLOWED_HOSTS = ['*']  # Allow all hosts for development
+# Railway provides RAILWAY_PUBLIC_DOMAIN and other environment variables
+ALLOWED_HOSTS = ['*']  # Railway will handle the domain
 
 # Application definition
 INSTALLED_APPS = [
@@ -57,8 +58,8 @@ MIDDLEWARE = [
 ]
 
 # CORS Settings for Ionic
-CORS_ALLOW_ALL_ORIGINS = True  # For development only
-CORS_ALLOW_CREDENTIALS = True  # Fixed - was incomplete
+CORS_ALLOW_ALL_ORIGINS = DEBUG  # Only allow all origins in development
+CORS_ALLOW_CREDENTIALS = True
 
 # Media files
 MEDIA_URL = '/media/'
