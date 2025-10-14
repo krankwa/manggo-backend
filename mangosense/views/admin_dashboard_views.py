@@ -386,6 +386,13 @@ def image_prediction_details(request, pk):
     """Get detailed prediction information for a specific image"""
     try:
         image = MangoImage.objects.get(pk=pk)
+        print(f"🔍 image_prediction_details for image {pk}:")
+        print(f"  - selected_symptoms: {getattr(image, 'selected_symptoms', 'MISSING')}")
+        print(f"  - primary_symptoms: {getattr(image, 'primary_symptoms', 'MISSING')}")
+        print(f"  - alternative_symptoms: {getattr(image, 'alternative_symptoms', 'MISSING')}")
+        print(f"  - detected_disease: {getattr(image, 'detected_disease', 'MISSING')}")
+        print(f"  - symptoms_data: {getattr(image, 'symptoms_data', 'MISSING')}")
+        
         serializer = MangoImageSerializer(image, context={'request': request})
         
         # Get top 3 predictions using helper function

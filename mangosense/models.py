@@ -24,6 +24,7 @@ class MangoImage(models.Model):
     predicted_class = models.CharField(max_length=50, blank=True)
     confidence_score = models.FloatField(null=True, blank=True)
     disease_type = models.CharField(max_length=20, blank=True)  # 'leaf' or 'fruit'
+    model_used = models.CharField(max_length=20, blank=True)  # Which ML model was used ('leaf' or 'fruit')
     
     # Additional fields needed for admin dashboard
     disease_classification = models.CharField(max_length=50, blank=True)
@@ -32,8 +33,16 @@ class MangoImage(models.Model):
     verified_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='verified_images')
     verified_date = models.DateTimeField(null=True, blank=True)
     notes = models.TextField(blank=True)
-    user_feedback = models.TextField(blank=True)  # User feedback about the detection
+    user_feedback = models.TextField(null=True, blank=True)  # User feedback about the detection
     user_confirmed_correct = models.BooleanField(null=True, blank=True)  # Whether user confirmed prediction as correct during analysis
+    
+    # Symptoms data from user verification
+    selected_symptoms = models.JSONField(null=True, blank=True)  # All selected symptoms combined
+    primary_symptoms = models.JSONField(null=True, blank=True)  # Primary disease symptoms only
+    alternative_symptoms = models.JSONField(null=True, blank=True)  # Alternative symptoms only
+    detected_disease = models.CharField(max_length=50, blank=True)  # Disease that was detected
+    top_diseases = models.JSONField(null=True, blank=True)  # Top diseases for reference
+    symptoms_data = models.JSONField(null=True, blank=True)  # Complete symptoms data structure
     
     # Metadata
     image_size = models.CharField(max_length=20, blank=True)

@@ -8,17 +8,11 @@ from django.core.validators import validate_email
 from django.shortcuts import render
 from rest_framework_simplejwt.tokens import RefreshToken
 from mangosense.models import UserProfile  # Import UserProfile model
+from .utils import validate_password_strength  # Import from utils to avoid duplication
 import json
 import uuid
 
 # Validation Functions
-def validate_password_strength(password):
-    """Validate password strength - minimum 8 characters"""
-    errors = []
-    if len(password) < 8:
-        errors.append("Password must be at least 8 characters long.")
-    return errors
-
 def validate_name(name, field_name):
     """Validate first name and last name"""
     errors = []

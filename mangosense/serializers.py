@@ -75,7 +75,9 @@ class MangoImageSerializer(serializers.ModelSerializer):
             'id', 'user', 'image', 'image_url', 'original_filename', 'predicted_class',
             'confidence_score', 'uploaded_at', 'is_verified', 'notes', 'disease_classification',
             'verified_by', 'verified_date', 'disease_type', 'user_feedback', 'user_confirmed_correct',
-            'latitude', 'longitude', 'location_address', 'location_source', 'location_consent_given', 'location_accuracy_confirmed'
+            'latitude', 'longitude', 'location_address', 'location_source', 'location_consent_given', 'location_accuracy_confirmed',
+            # Add symptoms fields
+            'selected_symptoms', 'primary_symptoms', 'alternative_symptoms', 'detected_disease', 'top_diseases', 'symptoms_data'
         ]
         read_only_fields = [
             'id', 'uploaded_at', 'predicted_class', 'confidence_score',
