@@ -439,7 +439,7 @@ def image_prediction_details(request, pk):
                 'debug_info': {
                     'model_loaded': True,
                     'image_size': getattr(image, 'image_size', 'Unknown'),
-                    'processed_size': '224x224'
+                    'processed_size': getattr(image, 'image_size', 'Unknown')
                 }
             },
             'timestamp': image.uploaded_at.isoformat()
