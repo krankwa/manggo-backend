@@ -44,7 +44,6 @@ def serve_media_file(request, file_path):
             return response
             
     except Exception as e:
-        print(f"Error serving media file {file_path}: {str(e)}")
         raise Http404("File not found")
 
 

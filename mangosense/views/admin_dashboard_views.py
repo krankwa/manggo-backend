@@ -15,10 +15,30 @@ from ..serializers import (
     MangoImageSerializer, MangoImageUpdateSerializer, 
     BulkUpdateSerializer, ImageUploadSerializer, UserDetailSerializer
 )
+from .ml_views import LEAF_MODEL_PATH, FRUIT_MODEL_PATH
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 
 # ================ HELPER FUNCTIONS ================
+
+def get_actual_model_path(image):
+    """
+    Get the actual model path from the stored model_filename in the database
+    """
+    model_filename = getattr(image, 'model_filename', None)
+    if model_filename:
+        model_path = f"models/{model_filename}"
+        return model_path
+    else:
+        # Fallback to old logic for existing records without model_filename
+        disease_type = getattr(image, 'disease_type', 'leaf')
+        import os
+        if disease_type == 'fruit':
+            model_path = f"models/{os.path.basename(FRUIT_MODEL_PATH)}"
+            return model_path
+        else:  # Default to leaf
+            model_path = f"models/{os.path.basename(LEAF_MODEL_PATH)}"
+            return model_path
 
 def get_top_predictions_for_image(image):
     """
@@ -153,8 +173,6 @@ def disease_statistics(request):
         })
         
     except Exception as e:
-        print(f"Error in disease_statistics: {str(e)}")
-        print(f"Traceback: {traceback.format_exc()}")
         return JsonResponse({
             'success': False,
             'error': f'Internal server error: {str(e)}'
@@ -386,13 +404,6 @@ def image_prediction_details(request, pk):
     """Get detailed prediction information for a specific image"""
     try:
         image = MangoImage.objects.get(pk=pk)
-        print(f"🔍 image_prediction_details for image {pk}:")
-        print(f"  - selected_symptoms: {getattr(image, 'selected_symptoms', 'MISSING')}")
-        print(f"  - primary_symptoms: {getattr(image, 'primary_symptoms', 'MISSING')}")
-        print(f"  - alternative_symptoms: {getattr(image, 'alternative_symptoms', 'MISSING')}")
-        print(f"  - detected_disease: {getattr(image, 'detected_disease', 'MISSING')}")
-        print(f"  - symptoms_data: {getattr(image, 'symptoms_data', 'MISSING')}")
-        
         serializer = MangoImageSerializer(image, context={'request': request})
         
         # Get top 3 predictions using helper function
@@ -435,7 +446,7 @@ def image_prediction_details(request, pk):
                 },
                 'saved_image_id': image.id,
                 'model_used': getattr(image, 'disease_type', 'leaf'),
-                'model_path': f"models/{getattr(image, 'disease_type', 'leaf')}-efficientnetb0-model.keras",
+                'model_path': get_actual_model_path(image),
                 'debug_info': {
                     'model_loaded': True,
                     'image_size': getattr(image, 'image_size', 'Unknown'),

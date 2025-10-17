@@ -15,16 +15,11 @@ def save_user_confirmation(request):
     """Save user confirmation for AI prediction"""
     try:
         data = request.data
-        print(f"🔍 Received confirmation request from {get_client_ip(request)}")
-        print(f"📥 Request data: {data}")
         
         # Required fields
         image_id = data.get('image_id')
         is_correct = data.get('is_correct')
         predicted_disease = data.get('predicted_disease')
-        
-        print(f"🔍 Extracted fields - image_id: {image_id}, is_correct: {is_correct}, predicted_disease: {predicted_disease}")
-        
         
         if image_id is None or is_correct is None or not predicted_disease:
             missing_fields = []
@@ -35,7 +30,6 @@ def save_user_confirmation(request):
             if not predicted_disease:
                 missing_fields.append('predicted_disease')
             
-            print(f"❌ Missing required fields: {missing_fields}")
             return JsonResponse(
                 create_api_response(
                     success=False,
@@ -48,9 +42,7 @@ def save_user_confirmation(request):
         # Get the image
         try:
             image = MangoImage.objects.get(id=image_id)
-            print(f"✅ Found image: {image.id} - {image.original_filename}")
         except MangoImage.DoesNotExist:
-            print(f"❌ Image not found with ID: {image_id}")
             return JsonResponse(
                 create_api_response(
                     success=False,
@@ -63,7 +55,6 @@ def save_user_confirmation(request):
         # Check if confirmation already exists
         existing_confirmation = UserConfirmation.objects.filter(image=image).first()
         if existing_confirmation:
-            print(f"⚠️ Confirmation already exists for image {image_id}: {existing_confirmation.id}")
             return JsonResponse(
                 create_api_response(
                     success=False,
@@ -86,15 +77,12 @@ def save_user_confirmation(request):
         
         # Handle location data if provided and consent given
         location_consent = data.get('location_consent_given', False)
-        print(f"📍 Location consent: {location_consent}")
         
         if location_consent:
             latitude = data.get('latitude')
             longitude = data.get('longitude')
             location_accuracy = data.get('location_accuracy')
             location_address = data.get('location_address', '')
-            
-            print(f"📍 Location data - lat: {latitude}, lng: {longitude}, accuracy: {location_accuracy}, address: {location_address}")
             
             confirmation_data.update({
                 'location_consent_given': True,
@@ -104,9 +92,7 @@ def save_user_confirmation(request):
                 'location_address': location_address,
             })
         
-        print(f"💾 Creating confirmation with data: {confirmation_data}")
         confirmation = UserConfirmation.objects.create(**confirmation_data)
-        print(f"✅ Confirmation created successfully with ID: {confirmation.id}")
         
         response_data = {
             'confirmation_id': confirmation.id,
@@ -117,7 +103,6 @@ def save_user_confirmation(request):
             'location_saved': confirmation.location_consent_given
         }
         
-        print(f"📤 Sending response: {response_data}")
         
         return JsonResponse(
             create_api_response(
@@ -128,7 +113,6 @@ def save_user_confirmation(request):
         )
         
     except Exception as e:
-        print(f"💥 Error saving confirmation: {str(e)}")
         import traceback
         traceback.print_exc()
         
@@ -173,7 +157,6 @@ def save_user_confirmation(request):
 def get_user_confirmations(request):
     """Get user confirmations for admin dashboard"""
     try:
-        print(f"🔍 get_user_confirmations called with params: {dict(request.GET)}")
         
         # Get query parameters
         page = int(request.GET.get('page', 1))
@@ -182,8 +165,6 @@ def get_user_confirmations(request):
         user_id = request.GET.get('user_id')
         disease = request.GET.get('disease')
         image_id = request.GET.get('image_id')  # Add this filter for admin panel
-        
-        print(f"🔍 Filters - page: {page}, page_size: {page_size}, filter_type: {filter_type}, image_id: {image_id}")
         
         # Base queryset
         queryset = UserConfirmation.objects.select_related('image', 'user').all()
@@ -205,24 +186,20 @@ def get_user_confirmations(request):
             try:
                 image_id_int = int(image_id)
                 queryset = queryset.filter(image_id=image_id_int)
-                print(f"🔍 Filtering by image_id: {image_id_int}")
             except (ValueError, TypeError):
-                print(f"❌ Invalid image_id format: {image_id}")
-        
+                pass
+
         # Pagination
         total_count = queryset.count()
-        print(f"🔍 Total confirmations found: {total_count}")
         
         start_index = (page - 1) * page_size
         end_index = start_index + page_size
         confirmations = queryset[start_index:end_index]
         
-        print(f"🔍 Found {len(confirmations)} confirmations to serialize")
         
         # Serialize data
         confirmation_data = []
         for conf in confirmations:
-            print(f"🔍 Serializing confirmation {conf.id} for image {conf.image.id}")
             
             confirmation_item = {
                 'id': conf.id,
@@ -261,9 +238,6 @@ def get_user_confirmations(request):
             }
             
             confirmation_data.append(confirmation_item)
-            print(f"✅ Serialized confirmation {conf.id}: is_correct={conf.is_correct}, disease={conf.predicted_disease}")
-        
-        print(f"📤 Returning {len(confirmation_data)} confirmations")
         
         # Calculate statistics
         stats = {

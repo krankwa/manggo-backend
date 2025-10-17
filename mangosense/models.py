@@ -25,6 +25,7 @@ class MangoImage(models.Model):
     confidence_score = models.FloatField(null=True, blank=True)
     disease_type = models.CharField(max_length=20, blank=True)  # 'leaf' or 'fruit'
     model_used = models.CharField(max_length=20, blank=True)  # Which ML model was used ('leaf' or 'fruit')
+    model_filename = models.CharField(max_length=100, blank=True)  # Actual model filename used (e.g., 'leaf-resnet101.keras')
     
     # Additional fields needed for admin dashboard
     disease_classification = models.CharField(max_length=50, blank=True)

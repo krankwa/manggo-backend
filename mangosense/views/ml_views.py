@@ -9,11 +9,11 @@ import os
 import gc
 import json
 import time
-from ..models import MangoImage, MLModel, PredictionLog
+from ..models import MangoImage, MLModel, PredictionLog, Notification
 from .utils import (
     get_client_ip, validate_image_file, get_disease_type,
     calculate_confidence_level, get_prediction_summary,
-    log_prediction_activity, generate_unique_filename,
+    log_prediction_activity, 
     create_api_response
 )
 
@@ -53,20 +53,17 @@ def get_treatment_for_disease(disease_name):
     Get treatment suggestion for a disease with better error handling and debugging
     """
     if not disease_name:
-        print("DEBUG: Empty disease name provided for treatment lookup")
         return "No treatment information available - disease name is empty."
     
     # Direct lookup first
     treatment = treatment_suggestions.get(disease_name)
     if treatment:
-        print(f"DEBUG: Found treatment for '{disease_name}': {treatment[:50]}...")
         return treatment
     
     # Try case-insensitive lookup
     disease_lower = disease_name.lower()
     for key, value in treatment_suggestions.items():
         if key.lower() == disease_lower:
-            print(f"DEBUG: Found treatment for '{disease_name}' via case-insensitive match with '{key}': {value[:50]}...")
             return value
     
     # Try partial match (for cases like 'Die Back' vs 'Die_Back')
@@ -74,18 +71,16 @@ def get_treatment_for_disease(disease_name):
     for key, value in treatment_suggestions.items():
         key_normalized = key.replace('_', ' ').replace('-', ' ').strip()
         if disease_normalized.lower() == key_normalized.lower():
-            print(f"DEBUG: Found treatment for '{disease_name}' via normalized match with '{key}': {value[:50]}...")
             return value
     
     # Log available keys for debugging
     available_keys = list(treatment_suggestions.keys())
-    print(f"DEBUG: No treatment found for '{disease_name}'. Available keys: {available_keys}")
     
     return f"No treatment information available for '{disease_name}'. Please consult with an agricultural expert."
 
 # Model paths
-LEAF_MODEL_PATH = os.path.join(settings.BASE_DIR, 'models', 'resnet101.keras')
-FRUIT_MODEL_PATH = os.path.join(settings.BASE_DIR, 'models', 'fruit-efficientnetb0-model.keras')
+LEAF_MODEL_PATH = os.path.join(settings.BASE_DIR, 'models', 'leaf-resnet101.keras')
+FRUIT_MODEL_PATH = os.path.join(settings.BASE_DIR, 'models', 'fruit-resnet101.keras')
 
 
 def preprocess_image(image_file):
@@ -102,7 +97,6 @@ def preprocess_image(image_file):
         
         return img_array, original_size
     except Exception as e:
-        print(f"Error in preprocess_image: {e}")
         raise e
 
 
@@ -114,9 +108,6 @@ def predict_image(request):
     start_time = time.time()
     
     # Add debug logging
-    print(f"DEBUG: Received prediction request from {get_client_ip(request)}")
-    print(f"DEBUG: Files in request: {list(request.FILES.keys())}")
-    print(f"DEBUG: Data in request: {request.data}")
     
     if 'image' not in request.FILES:
         return JsonResponse(
@@ -174,29 +165,9 @@ def predict_image(request):
         except (json.JSONDecodeError, TypeError):
             symptoms_data = {}
         
-        print(f"DEBUG: Processing image: {image_file.name}, size: {image_file.size}")
-        print(f"DEBUG: Preview only: {preview_only}")
-        print(f"DEBUG: User verification - correct: {is_detection_correct}, feedback: {user_feedback}")
-        print(f"DEBUG: Raw symptoms data from request:")
-        print(f"  - selected_symptoms (raw): {request.data.get('selected_symptoms', 'NOT_PROVIDED')}")
-        print(f"  - primary_symptoms (raw): {request.data.get('primary_symptoms', 'NOT_PROVIDED')}")
-        print(f"  - alternative_symptoms (raw): {request.data.get('alternative_symptoms', 'NOT_PROVIDED')}")
-        print(f"DEBUG: Parsed symptoms data:")
-        print(f"  - selected_symptoms (parsed): {selected_symptoms}")
-        print(f"  - primary_symptoms (parsed): {primary_symptoms}")
-        print(f"  - alternative_symptoms (parsed): {alternative_symptoms}")
-        print(f"  - detected_disease: {detected_disease}")
-        print(f"  - top_diseases: {top_diseases}")
-        print(f"  - symptoms_data: {symptoms_data}")
-        print(f"DEBUG: Will save to database: {not preview_only}")
-        print(f"DEBUG: Location data - accuracy confirmed: {location_accuracy_confirmed}, source: {location_source}")
-        if latitude and longitude:
-            print(f"DEBUG: Location coordinates: {latitude}, {longitude}")
-
         # Validate image file using utils
         validation_errors = validate_image_file(image_file)
         if validation_errors:
-            print(f"DEBUG: Validation errors: {validation_errors}")
             return JsonResponse(
                 create_api_response(
                     success=False,
@@ -209,9 +180,7 @@ def predict_image(request):
         # Process image for prediction with error handling
         try:
             img_array, original_size = preprocess_image(image_file)
-            print(f"DEBUG: Image preprocessed successfully, shape: {img_array.shape}")
         except Exception as preprocessing_error:
-            print(f"DEBUG: Preprocessing error: {str(preprocessing_error)}")
             return JsonResponse(
                 create_api_response(
                     success=False,
@@ -223,7 +192,6 @@ def predict_image(request):
 
         # Get prediction type and location data
         detection_type = request.data.get('detection_type', 'leaf')
-        print(f"DEBUG: Detection type: {detection_type}")
         
         # Extract location data from request
         latitude = request.data.get('latitude')
@@ -232,8 +200,6 @@ def predict_image(request):
         location_source = request.data.get('location_source', '')
         location_address = request.data.get('location_address', '')
         
-        print(f"📍 DEBUG: Location data - lat: {latitude}, lng: {longitude}, accuracy confirmed: {location_accuracy_confirmed}, source: {location_source}")
-
         # Choose model path and class names (IMPROVED LOGIC)
         if detection_type == 'fruit':
             model_path = FRUIT_MODEL_PATH
@@ -244,8 +210,6 @@ def predict_image(request):
             model_used = 'leaf'
             model_class_names = LEAF_CLASS_NAMES
 
-        print(f"DEBUG: Using model: {model_path}")
-        print(f"DEBUG: Model exists: {os.path.exists(model_path)}")
 
         # Check if model file exists
         if not os.path.exists(model_path):
@@ -261,9 +225,7 @@ def predict_image(request):
         # Load the model dynamically with error handling
         try:
             model = tf.keras.models.load_model(model_path)
-            print(f"DEBUG: Model loaded successfully")
         except Exception as model_error:
-            print(f"DEBUG: Model loading error: {str(model_error)}")
             return JsonResponse(
                 create_api_response(
                     success=False,
@@ -277,9 +239,7 @@ def predict_image(request):
         try:
             prediction = model.predict(img_array)
             prediction = np.array(prediction).flatten()
-            print(f"DEBUG: Prediction successful, shape: {prediction.shape}")
         except Exception as prediction_error:
-            print(f"DEBUG: Prediction error: {str(prediction_error)}")
             return JsonResponse(
                 create_api_response(
                     success=False,
@@ -358,7 +318,6 @@ def predict_image(request):
         if not preview_only:
             try:
                 image_file.seek(0)
-                unique_filename = generate_unique_filename(image_file.name)
                 
                 # Prepare location data for storage - always save if available
                 location_data = {}
@@ -372,10 +331,7 @@ def predict_image(request):
                             'location_source': location_source,
                             'location_address': location_address,
                         })
-                        print(f"📍 DEBUG: Storing location data - accuracy confirmed: {location_accuracy_confirmed}")
-                        print(f"📍 DEBUG: Location data: {location_data}")
                     except (ValueError, TypeError) as e:
-                        print(f"📍 WARNING: Invalid location coordinates, not storing: {e}")
                         location_data.update({
                             'location_consent_given': False,
                             'location_accuracy_confirmed': False,
@@ -385,7 +341,6 @@ def predict_image(request):
                         'location_consent_given': False,
                         'location_accuracy_confirmed': False,
                     })
-                    print(f"📍 DEBUG: No location data available")
                 
                 # Calculate processing time
                 processing_time = time.time() - start_time
@@ -397,6 +352,7 @@ def predict_image(request):
                     disease_classification=prediction_summary['primary_prediction']['disease'],
                     disease_type=model_used,  # Use the actual model that was used for detection
                     model_used=model_used,  # Store which model was actually used
+                    model_filename=os.path.basename(model_path),  # Store the actual model filename
                     confidence_score=prediction_summary['primary_prediction']['confidence'] / 100,
                     user=request.user if request.user.is_authenticated else None,
                     image_size=f"{original_size[0]}x{original_size[1]}",
@@ -417,12 +373,34 @@ def predict_image(request):
                 )
                 log_prediction_activity(request.user, mango_image.id, prediction_summary)
                 saved_image_id = mango_image.id
-                print(f"✅ DEBUG: Image saved to database with ID: {saved_image_id}")
+                
+                # Create notification for admin dashboard
+                try:
+                    # Get the user who uploaded the image or use a default system user
+                    notification_user = mango_image.user if mango_image.user else None
+                    
+                    # If no user is authenticated, try to get an admin user for the notification
+                    if not notification_user:
+                        from django.contrib.auth.models import User
+                        notification_user = User.objects.filter(is_staff=True).first()
+                    
+                    if notification_user:
+                        # Create a notification about the new image upload
+                        Notification.objects.create(
+                            notification_type='image_upload',
+                            title=f'New {model_used.title()} Image Upload',
+                            message=f'A new {model_used} image "{mango_image.original_filename}" was uploaded and classified as {prediction_summary["primary_prediction"]["disease"]} with {prediction_summary["primary_prediction"]["confidence"]:.1f}% confidence.',
+                            related_image=mango_image,
+                            user=notification_user
+                        )
+                    else:
+                        print(f"No user available for notification creation")
+                except Exception as notification_error:
+                    print(f"Error creating notification: {notification_error}")
+                    # Don't fail the entire request if notification creation fails
             except Exception as e:
-                print(f"❌ Error saving image to database: {e}")
+                print(f"Error saving image to database: {e}")
                 saved_image_id = None
-        else:
-            print(f"🔍 DEBUG: Preview mode - skipping database save")
 
         # Memory cleanup
         gc.collect()
@@ -482,9 +460,8 @@ def predict_image(request):
                 raw_response=response_data
             )
         except Exception as e:
-            print(f"DEBUG: Failed to save PredictionLog: {e}")
+            print(f"Failed to log prediction activity: {str(e)}")
 
-        print(f"DEBUG: Returning successful response for {prediction_summary['primary_prediction']['disease']}")
         return JsonResponse(
             create_api_response(
                 success=True,
@@ -494,10 +471,6 @@ def predict_image(request):
         )
 
     except Exception as e:
-        print(f"DEBUG: General error in predict_image: {str(e)}")
-        import traceback
-        print(f"DEBUG: Traceback: {traceback.format_exc()}")
-        
         return JsonResponse(
             create_api_response(
                 success=False,

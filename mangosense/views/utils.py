@@ -1,5 +1,5 @@
 from django.http import JsonResponse
-from django.utils import timezone  # Add this import
+from django.utils import timezone 
 import json
 import os
 import uuid
@@ -189,16 +189,3 @@ def create_api_response(success=True, message="", data=None, errors=None, error_
     
     return response_data
 
-def generate_unique_filename(original_filename):
-    """Generate unique filename to avoid conflicts"""
-    import uuid
-    import os
-    
-    # Get file extension
-    name, ext = os.path.splitext(original_filename)
-    
-    # Generate unique filename
-    unique_id = str(uuid.uuid4())[:8]
-    safe_name = sanitize_filename(name)
-    
-    return f"{safe_name}_{unique_id}{ext}"

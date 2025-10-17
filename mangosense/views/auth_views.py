@@ -158,7 +158,6 @@ def register_api(request):
             'error': 'Invalid data format.'
         }, status=400)
     except Exception as e:  
-        print("Registration error:", str(e))
         return JsonResponse({
             'success': False,
             'error': f'An unexpected error occurred: {str(e)}'
