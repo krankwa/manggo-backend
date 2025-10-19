@@ -20,7 +20,7 @@ from .utils import (
 import tensorflow as tf
 
 # ML Configuration
-IMG_SIZE = (240, 240)
+IMG_SIZE = (224, 224)
 
 # Separate class names for each model type (IMPROVED ORGANIZATION)
 LEAF_CLASS_NAMES = [
