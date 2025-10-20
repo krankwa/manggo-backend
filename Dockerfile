@@ -1,4 +1,5 @@
-FROM python:3.11-slim
+# Temporary fix: Use GitHub Container Registry during Docker Hub outage
+FROM ghcr.io/library/python:3.11-slim
 
 # Set working directory
 WORKDIR /app
