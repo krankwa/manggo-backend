@@ -33,8 +33,8 @@ RUN python manage.py check --deploy
 # Collect static files
 RUN python manage.py collectstatic --noinput
 
-# Create a simple startup script
-RUN echo '#!/bin/bash\npython manage.py migrate --noinput\npython manage.py create_superuser\necho "Starting gunicorn on port $PORT"\nexec gunicorn mangoAPI.wsgi:application --bind 0.0.0.0:$PORT --workers 1 --timeout 300 --log-level info --access-logfile - --error-logfile -' > /app/start.sh
+# Create a startup script with proper initialization
+RUN echo '#!/bin/bash\nset -e\necho "Starting mangosense backend initialization..."\necho "Running database migrations..."\npython manage.py migrate --noinput\necho "Creating superuser (if needed)..."\npython manage.py create_superuser || echo "Superuser creation skipped"\necho "Checking Django configuration..."\npython manage.py check\necho "Starting gunicorn on port $PORT"\nexec gunicorn mangoAPI.wsgi:application --bind 0.0.0.0:$PORT --workers 1 --timeout 300 --log-level info --access-logfile - --error-logfile -' > /app/start.sh
 RUN chmod +x /app/start.sh
 
 # Expose port
