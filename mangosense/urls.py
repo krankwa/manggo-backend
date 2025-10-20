@@ -17,6 +17,7 @@ from .views import (
     upload_image,
     export_dataset,
 )
+from .views.health_views import health_check
 from .views.admin_dashboard_views import (
     # User Management APIs
     users_list,
@@ -50,6 +51,9 @@ from django.conf.urls.static import static
 app_name = 'mangosense'
 
 urlpatterns = [
+    # Health check endpoint for Railway deployment
+    path('health/', health_check, name='health_check'),
+    
     # Mobile app authentication endpoints
     path('register/', register_api, name='register_api'),
     path('login/', login_api, name='login_api'),
