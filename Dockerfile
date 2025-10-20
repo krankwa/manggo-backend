@@ -33,8 +33,8 @@ RUN python manage.py check --deploy
 # Collect static files
 RUN python manage.py collectstatic --noinput
 
-# Create a simple startup script for Railway deployment
-RUN echo '#!/bin/bash\nset -e\necho "Starting mangosense backend for Railway..."\n\n# Skip migrations on Railway - handle them separately\necho "Environment: Railway deployment"\necho "Port: $PORT"\necho "Database URL configured: $([ -n \"$DATABASE_URL\" ] && echo \"Yes\" || echo \"No - using SQLite\")"\n\n# Start gunicorn directly\necho "Starting gunicorn on port $PORT"\nexec gunicorn mangoAPI.wsgi:application --bind 0.0.0.0:$PORT --workers 1 --timeout 300 --log-level info --access-logfile - --error-logfile -' > /app/start.sh
+# Create a debug startup script for Railway deployment
+RUN echo '#!/bin/bash\nset -e\necho "=== Railway Startup Debug Info ==="\necho "Environment: $RAILWAY_ENVIRONMENT_NAME"\necho "Port: $PORT"\necho "Python version: $(python --version)"\necho "Working directory: $(pwd)"\necho "Files in current directory:"\nls -la\necho "Django check:"\npython manage.py check --verbosity=2 || echo "Django check failed but continuing..."\necho "Testing simple Django command:"\npython -c "import django; print(f\\"Django version: {django.get_version()}\\")" || echo "Django import failed"\necho "Testing settings import:"\npython -c "from mangoAPI import settings; print(\\"Settings imported successfully\\")" || echo "Settings import failed"\necho "=== Starting Gunicorn ==="\necho "Starting gunicorn on 0.0.0.0:$PORT"\nexec gunicorn mangoAPI.wsgi:application --bind 0.0.0.0:$PORT --workers 1 --timeout 300 --log-level debug --access-logfile - --error-logfile - --capture-output --enable-stdio-inheritance' > /app/start.sh
 RUN chmod +x /app/start.sh
 
 # Expose port

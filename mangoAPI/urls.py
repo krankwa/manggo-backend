@@ -1,33 +1,22 @@
 from django.contrib import admin
 from django.urls import path, include
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.conf import settings
 from django.conf.urls.static import static
-from django.utils import timezone
 import os
+import datetime
 
 def health_check(request):
-    """Simple health check that responds immediately during Railway deployment"""
+    """Ultra simple health check for Railway deployment"""
     try:
-        # Always return healthy for Railway health check
-        # Full database checks can be done at /api/health/ endpoint
         return JsonResponse({
-            "status": "healthy", 
-            "message": "Django app is running",
+            "status": "healthy",
             "service": "mangosense-backend",
-            "port": os.environ.get('PORT', 'Not set'),
-            "timestamp": timezone.now().isoformat(),
-            "version": "1.0.0"
+            "timestamp": datetime.datetime.now().isoformat()
         }, status=200)
-        
-    except Exception as e:
-        # Even if there's an error, return 200 for Railway health check
-        return JsonResponse({
-            "status": "starting",
-            "message": "Service is initializing",
-            "error": str(e),
-            "timestamp": str(timezone.now()) if hasattr(timezone, 'now') else None
-        }, status=200)
+    except:
+        # If JSON fails, return plain text
+        return HttpResponse("OK", status=200)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
