@@ -28,20 +28,8 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-m33e+gk)*=q+fllk0z&r@
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 
-# Railway provides RAILWAY_PUBLIC_DOMAIN and other environment variables
-# Allow all hosts for now since Railway manages the domain
+# Production deployment - allow all hosts (cloud platforms manage domains)
 ALLOWED_HOSTS = ['*']
-
-# Railway environment detection
-IS_RAILWAY = os.environ.get('RAILWAY_ENVIRONMENT_NAME') is not None
-RAILWAY_DOMAIN = os.environ.get('RAILWAY_PUBLIC_DOMAIN', '')
-
-if IS_RAILWAY:
-    print(f"Running on Railway environment: {os.environ.get('RAILWAY_ENVIRONMENT_NAME')}")
-    print(f"Railway domain: {RAILWAY_DOMAIN}")
-    print(f"Port: {os.environ.get('PORT', 'Not set')}")
-    if RAILWAY_DOMAIN:
-        ALLOWED_HOSTS = [RAILWAY_DOMAIN, '*.railway.app', '*']
 
 # Application definition
 INSTALLED_APPS = [
@@ -144,34 +132,12 @@ WSGI_APPLICATION = 'mangoAPI.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-# Database configuration for Railway (if using PostgreSQL)
+# Database configuration for Render deployment
 if 'DATABASE_URL' in os.environ:
-    try:
-        import dj_database_url
-        DATABASES = {
-            'default': dj_database_url.parse(
-                os.environ.get('DATABASE_URL'),
-                conn_max_age=600,
-                conn_health_checks=True,
-            )
-        }
-        print("Using PostgreSQL database from DATABASE_URL")
-    except ImportError:
-        print("Warning: dj_database_url not available, falling back to SQLite")
-        DATABASES = {
-            'default': {
-                'ENGINE': 'django.db.backends.sqlite3',
-                'NAME': BASE_DIR / 'db.sqlite3',
-            }
-        }
-    except Exception as e:
-        print(f"Database configuration error: {e}")
-        DATABASES = {
-            'default': {
-                'ENGINE': 'django.db.backends.sqlite3',
-                'NAME': BASE_DIR / 'db.sqlite3',
-            }
-        }
+    import dj_database_url
+    DATABASES = {
+        'default': dj_database_url.parse(os.environ.get('DATABASE_URL'))
+    }
 else:
     # Default SQLite for development
     DATABASES = {
@@ -180,7 +146,6 @@ else:
             'NAME': BASE_DIR / 'db.sqlite3',
         }
     }
-    print("Using SQLite database for development")
 
 
 # Password validation

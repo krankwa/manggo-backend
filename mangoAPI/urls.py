@@ -1,22 +1,17 @@
 from django.contrib import admin
 from django.urls import path, include
-from django.http import JsonResponse, HttpResponse
+from django.http import JsonResponse
 from django.conf import settings
 from django.conf.urls.static import static
-import os
-import datetime
+from django.utils import timezone
 
 def health_check(request):
-    """Ultra simple health check for Railway deployment"""
-    try:
-        return JsonResponse({
-            "status": "healthy",
-            "service": "mangosense-backend",
-            "timestamp": datetime.datetime.now().isoformat()
-        }, status=200)
-    except:
-        # If JSON fails, return plain text
-        return HttpResponse("OK", status=200)
+    """Simple health check for Render deployment"""
+    return JsonResponse({
+        "status": "healthy",
+        "service": "mangosense-backend",
+        "timestamp": timezone.now().isoformat()
+    }, status=200)
 
 urlpatterns = [
     path('admin/', admin.site.urls),

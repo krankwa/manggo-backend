@@ -1,5 +1,5 @@
-# Temporary fix: Use public Python image during Docker Hub outage
-FROM public.ecr.aws/docker/library/python:3.11-slim
+# Use standard Python image (Render supports Docker Hub)
+FROM python:3.11-slim
 
 # Set working directory
 WORKDIR /app
@@ -33,8 +33,8 @@ RUN python manage.py check --deploy
 # Collect static files
 RUN python manage.py collectstatic --noinput
 
-# Create a debug startup script for Railway deployment
-RUN echo '#!/bin/bash\nset -e\necho "=== Railway Startup Debug Info ==="\necho "Environment: $RAILWAY_ENVIRONMENT_NAME"\necho "Port: $PORT"\necho "Python version: $(python --version)"\necho "Working directory: $(pwd)"\necho "Files in current directory:"\nls -la\necho "Django check:"\npython manage.py check --verbosity=2 || echo "Django check failed but continuing..."\necho "Testing simple Django command:"\npython -c "import django; print(f\\"Django version: {django.get_version()}\\")" || echo "Django import failed"\necho "Testing settings import:"\npython -c "from mangoAPI import settings; print(\\"Settings imported successfully\\")" || echo "Settings import failed"\necho "=== Starting Gunicorn ==="\necho "Starting gunicorn on 0.0.0.0:$PORT"\nexec gunicorn mangoAPI.wsgi:application --bind 0.0.0.0:$PORT --workers 1 --timeout 300 --log-level debug --access-logfile - --error-logfile - --capture-output --enable-stdio-inheritance' > /app/start.sh
+# Create startup script for Render deployment
+RUN echo '#!/bin/bash\nset -e\necho "Starting Django application..."\necho "Running database migrations..."\npython manage.py migrate --noinput\necho "Collecting static files..."\npython manage.py collectstatic --noinput\necho "Creating superuser (if needed)..."\npython manage.py create_superuser || echo "Superuser creation skipped"\necho "Starting gunicorn on port $PORT"\nexec gunicorn mangoAPI.wsgi:application --bind 0.0.0.0:$PORT --workers 3 --timeout 120 --log-level info --access-logfile - --error-logfile -' > /app/start.sh
 RUN chmod +x /app/start.sh
 
 # Expose port
