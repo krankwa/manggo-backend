@@ -58,7 +58,8 @@ MIDDLEWARE = [
 ]
 
 # CORS Settings for Ionic
-CORS_ALLOW_ALL_ORIGINS = DEBUG  # Only allow all origins in development
+# Allow all origins in production for easier frontend integration
+CORS_ALLOW_ALL_ORIGINS = os.environ.get('CORS_ALLOW_ALL_ORIGINS', 'False').lower() == 'true' or DEBUG
 CORS_ALLOW_CREDENTIALS = True
 
 # Media files
