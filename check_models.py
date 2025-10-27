@@ -17,6 +17,10 @@ def check_model_files():
         'fruit-mobilenetv2.keras': MODELS_DIR / 'fruit-mobilenetv2.keras'
     }
     
+    print("=" * 50)
+    print("Checking model files...")
+    print("=" * 50)
+    
     all_ok = True
     for name, path in models.items():
         if not path.exists():
@@ -34,10 +38,6 @@ def check_model_files():
     return all_ok
 
 if __name__ == '__main__':
-    print("=" * 50)
-    print("Checking model files...")
-    print("=" * 50)
-    
     if check_model_files():
         print("\n✅ All model files are present and valid")
         sys.exit(0)
