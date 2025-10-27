@@ -1,1 +1,1 @@
-﻿web: python manage.py migrate && gunicorn mangoAPI.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 180 --log-level debug
+﻿web: python manage.py migrate && gunicorn mangoAPI.wsgi:application --bind 0.0.0.0:$PORT --workers 1 --threads 4 --timeout 300 --log-level debug --access-logfile - --error-logfile -
