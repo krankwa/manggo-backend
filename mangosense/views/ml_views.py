@@ -20,15 +20,15 @@ from .utils import (
 import tensorflow as tf
 
 # ML Configuration
-IMG_SIZE = (224, 224)
+IMG_SIZE = (240, 240)
 
 # Separate class names for each model type (IMPROVED ORGANIZATION)
 LEAF_CLASS_NAMES = [
-    'Anthracnose','Die Back', 'Healthy','Powdery Mildew','Sooty Mold',
+    'Anthracnose','Die Back', 'Healthy', 'powdery mildew','Sooty Mold',
 ]
 
 FRUIT_CLASS_NAMES = [
-    'Anthracnose', 'Black Mold Rot', 'Healthy', 'Stem End Rot'
+    'Anthracnose', 'Healthy'
 ]
 
 # Keep backward compatibility with old class_names (for any legacy code)
@@ -79,8 +79,8 @@ def get_treatment_for_disease(disease_name):
     return f"No treatment information available for '{disease_name}'. Please consult with an agricultural expert."
 
 # Model paths
-LEAF_MODEL_PATH = os.path.join(settings.BASE_DIR, 'models', 'leaf-resnet101.keras')
-FRUIT_MODEL_PATH = os.path.join(settings.BASE_DIR, 'models', 'fruit-resnet101.keras')
+LEAF_MODEL_PATH = os.path.join(settings.BASE_DIR, 'models', 'leaf-mobilenetv2.keras')
+FRUIT_MODEL_PATH = os.path.join(settings.BASE_DIR, 'models', 'fruit-mobilenetv2.keras')
 
 
 def preprocess_image(image_file):
@@ -91,8 +91,8 @@ def preprocess_image(image_file):
         img = img.resize(IMG_SIZE)
         img_array = np.array(img)
         
-        # CRITICAL FIX: Apply EfficientNet preprocessing then add batch dimension
-        img_array = tf.keras.applications.efficientnet.preprocess_input(img_array)
+        # CRITICAL FIX: Apply MobileNetV2 preprocessing then add batch dimension
+        img_array = tf.keras.applications.mobilenet_v2.preprocess_input(img_array)
         img_array = np.expand_dims(img_array, axis=0)
         
         return img_array, original_size
@@ -103,11 +103,9 @@ def preprocess_image(image_file):
 @api_view(['POST'])
 @parser_classes([MultiPartParser, FormParser])
 def predict_image(request):
-    """Handle image prediction from mobile Ionic app"""
     import time
     start_time = time.time()
     
-    # Add debug logging
     
     if 'image' not in request.FILES:
         return JsonResponse(
@@ -191,7 +189,7 @@ def predict_image(request):
             )
 
         # Get prediction type and location data
-        detection_type = request.data.get('detection_type', 'leaf')
+        detection_type = request.data.get('detection_type', 'fruit')
         
         # Extract location data from request
         latitude = request.data.get('latitude')
@@ -201,6 +199,7 @@ def predict_image(request):
         location_address = request.data.get('location_address', '')
         
         # Choose model path and class names (IMPROVED LOGIC)
+        print("Detection type:", detection_type)
         if detection_type == 'fruit':
             model_path = FRUIT_MODEL_PATH
             model_used = 'fruit'
@@ -238,8 +237,27 @@ def predict_image(request):
         # Real ML prediction with error handling
         try:
             prediction = model.predict(img_array)
+            print(f"Raw prediction shape: {prediction.shape}")
+            print(f"Raw prediction: {prediction}")
+    
             prediction = np.array(prediction).flatten()
+            print(f"Flattened prediction shape: {prediction.shape}")
+            print(f"Flattened prediction: {prediction}")
+            print(f"Prediction length: {len(prediction)}")
+            print(f"Class names length: {len(model_class_names)}")
+            print(f"Class names: {model_class_names}")
+            
+            if len(prediction) == 0:
+                raise ValueError("Model returned empty prediction array")
+            
+            if len(prediction) != len(model_class_names):
+                raise ValueError(f"Prediction length ({len(prediction)}) doesn't match class names length ({len(model_class_names)})")
+            
         except Exception as prediction_error:
+            print(f"Prediction error details: {prediction_error}")
+            import traceback
+            traceback.print_exc()
+            
             return JsonResponse(
                 create_api_response(
                     success=False,

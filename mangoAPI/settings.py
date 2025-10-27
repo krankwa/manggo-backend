@@ -16,8 +16,6 @@ import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-MODEL_PATH = os.path.join(BASE_DIR, 'models', 'leaf-efficientnetb0-model.keras')
-FRUIT_MODEL_PATH = os.path.join(BASE_DIR, 'models', 'fruit-efficientnetb0-model.keras')
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
@@ -26,7 +24,8 @@ FRUIT_MODEL_PATH = os.path.join(BASE_DIR, 'models', 'fruit-efficientnetb0-model.
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-m33e+gk)*=q+fllk0z&r@%m=t$k5_4dw4x4xtnm4)5q%uesfs)')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
+# Default to True for local development, False in production
+DEBUG = os.environ.get('DEBUG', 'True').lower() == 'true'
 
 # Production deployment - allow all hosts (cloud platforms manage domains)
 ALLOWED_HOSTS = ['*']
@@ -134,8 +133,7 @@ WSGI_APPLICATION = 'mangoAPI.wsgi.application'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
 # Database configuration for Render deployment
-if 'DATABASE_URL' in os.environ:
-    import dj_database_url
+if 'DATABASE_URL' in os.environ:                                                              
     DATABASES = {
         'default': dj_database_url.parse(os.environ.get('DATABASE_URL'))
     }
@@ -185,6 +183,7 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_DIRS = []
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
