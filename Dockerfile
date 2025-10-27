@@ -10,7 +10,7 @@ ENV PYTHONUNBUFFERED=1
 ENV DJANGO_SETTINGS_MODULE=mangoAPI.settings
 ENV PORT=8000
 
-# Install system dependencies including OpenGL for OpenCV/TensorFlow
+# Install system dependencies including Git LFS for model files
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         build-essential \
@@ -18,7 +18,13 @@ RUN apt-get update \
         pkg-config \
         libgl1 \
         libglib2.0-0 \
+        git \
+        git-lfs \
+        curl \
     && rm -rf /var/lib/apt/lists/*
+
+# Initialize Git LFS
+RUN git lfs install
 
 # Copy requirements first for better caching
 COPY requirements.txt .
@@ -29,6 +35,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the rest of the application
 COPY . .
+
+# Check if model files are valid (not LFS pointers)
+RUN python check_models.py || echo "WARNING: Model files may not be properly downloaded"
 
 # Collect static files
 RUN python manage.py collectstatic --noinput
