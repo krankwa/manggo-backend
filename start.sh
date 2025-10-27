@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+set -ex  # Enable debugging and exit on error
 
 echo "================================="
 echo "Starting Django Application"
@@ -12,7 +12,7 @@ export PORT=${PORT:-8000}
 
 echo "Running migrations..."
 python manage.py migrate --noinput
-echo "Migrations complete"
+echo "Migrations complete - SUCCESS"
 
 echo "Starting Gunicorn on 0.0.0.0:$PORT"
 exec gunicorn mangoAPI.wsgi:application \
