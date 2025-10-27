@@ -16,7 +16,7 @@ RUN apt-get update \
         build-essential \
         libhdf5-dev \
         pkg-config \
-        libgl1-mesa-glx \
+        libgl1 \
         libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
