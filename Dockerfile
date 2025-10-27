@@ -48,5 +48,5 @@ RUN python manage.py collectstatic --noinput
 # Expose port (Railway will override with $PORT)
 EXPOSE 8000
 
-# Use the startup script
-CMD ["/bin/bash", "/app/start.sh"]
+# Run start.sh directly without bash wrapper for testing
+CMD ["/app/start.sh"]
