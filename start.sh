@@ -1,20 +1,21 @@
 #!/bin/bash
-set -ex  # Enable debugging and exit on error
+set -e
 
 echo "================================="
 echo "Starting Django Application"
 echo "================================="
-echo "PORT environment variable: ${PORT:-NOT SET}"
-echo "Using port: ${PORT:-8000}"
 
 # Ensure PORT is set
 export PORT=${PORT:-8000}
+echo "Server will bind to: 0.0.0.0:$PORT"
 
+# Run database migrations
 echo "Running migrations..."
 python manage.py migrate --noinput
-echo "Migrations complete - SUCCESS"
+echo "Migrations complete"
 
-echo "Starting Gunicorn on 0.0.0.0:$PORT"
+# Start Gunicorn server
+echo "Starting Gunicorn..."
 exec gunicorn mangoAPI.wsgi:application \
     --bind 0.0.0.0:$PORT \
     --workers 1 \
