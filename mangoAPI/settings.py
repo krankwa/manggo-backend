@@ -25,7 +25,7 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-m33e+gk)*=q+fllk0z&r@
 
 # SECURITY WARNING: don't run with debug turned on in production!
 # Default to True for local development, False in production
-DEBUG = os.environ.get('DEBUG', 'True').lower() == 'true'
+DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 
 # Production deployment - allow all hosts (cloud platforms manage domains)
 ALLOWED_HOSTS = ['*']
@@ -78,6 +78,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:8000",
     "capacitor://localhost",  # For Capacitor mobile apps
     "ionic://localhost",      # For Ionic mobile apps
+    "http://localhost",
 ]
 
 CORS_ALLOW_HEADERS = [
@@ -93,6 +94,7 @@ CORS_ALLOW_HEADERS = [
     'access-control-allow-origin',
     'access-control-allow-headers',
     'access-control-allow-methods',
+    '.railway.app',
 ]
 
 
